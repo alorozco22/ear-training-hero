@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Ear training</title>
+	<script type="text/javascript">
+		
+		let velocidad = undefined;
+		let modo = undefined;
+		let cantidad = 10;
+		let parches = [];
+		let canvas;
+		let context;
+		let camaraX = 0;
+
+		const m_segundas = 1;
+		const m_terceras = 2;
+		const m_libre = 3;
+		const m_seg_ter = 4;
+
+		// for drawings
+		let ovalHeight; 
+		let ovalWidth;
+		let ovalRotation;
+		let alturaDeEspacio;
+		let espacioEntreSemis;
+
+		/*
+			Heights in the pentagram
+						6
+			---------	+1/2
+						5
+			---------	+1/2
+						4
+			---------	+1/2
+						3
+			---------	+1/2
+						2
+			---------	+1/2
+						1
+		*/
+
+		window.onload = function() {
+		  velocidad = prompt("Ingresa un número positivo para la velocidad", "Velocidad: 2");
+		  modo = prompt("Indica el modo (solo un número)", "1 es segundas y terceras; 2 segundas; 3 terceras; 4 libre");
+		  cantidad = prompt("¿Cuántos grupos de notas quieres practicar?", "entrenemos 10 gurpos!")
+
+		  document.getElementById("gameWindow").height = window.innerHeight;
+		  document.getElementById("gameWindow").width = window.innerWidth;
+
+		  canvas = document.getElementById("gameWindow");
+		  context = canvas.getContext("2d");
+
+		  // For drawings
+		  ovalHeight = (canvas.height/6)/2;
+		  ovalWidth = ovalHeight*1.2;
+		  ovalRotation = -0.1;
+		  alturaDeEspacio = ovalHeight;
+		  espacioEntreSemis = 3*ovalWidth;
+
+		  // DEVELOPMENT: ADDING SOME SEMICORCHEAS
+		  
+		  crearEjercicio();
+		 
+		  //nuevoParche([3,3,3+1/2,4], false);
+		  //nuevoParche([3,3,3+1/2,4], false);
+		  
+
+			setInterval(update, 1000/30);
+		};
+
+		function update(){
+			console.log('camaraX: '+camaraX+' | finCamaraX: '+(camaraX-canvas.width));
+
+			// Update logic
+
+			// Background
+			dibujarPentagrama();
+
+
+			
+			for (let i=0; i<parches.length; i++){
+				// actualizamos la lógica verificando visibilidad	
+				console.log("parcheVisible: "+parcheVisible(parches[i])+" | xPosition: "+parches[i].xPosition+" | ancho: "+parches[i].ancho);
+				
+				// rederizamos
+				dibujarParche(parches[i].listaAlturas, 
+					parches[i].doble, 
+					parches[i].visible,
+					parches[i].xPosition);
+				
+			}
+			camaraX=camaraX-velocidad;
+		}
+
+		function dibujarPentagrama(){
+			context.fillStyle="#ffffff";
+			context.fillRect(0,0,canvas.width,canvas.height);
+			context.fillStyle="#000000";
+			
+			for (let i = 1; i<6; i++) {
+				context.beginPath();
+				context.moveTo(0, i*(canvas.height/6));
+				context.lineTo(window.innerWidth, i*(canvas.height/6));
+				context.stroke();	
+			}
+			
+		}
+
+		function dibujarParche(listaAlturas, doble, visible, xPosition){
+			if(visible){
+				for(let i = 0; i<listaAlturas.length; i++){
+					context.beginPath();
+					
+					context.ellipse((camaraX-xPosition)+espacioEntreSemis*i, // x
+						canvas.height-2*(listaAlturas[i]*alturaDeEspacio)+ovalHeight, // y
+						ovalWidth, // x-radius
+						ovalHeight, // y-radius
+						ovalRotation, // ratation
+						0, 360); // start and end angles
+
+
+					context.fill();
+				}
+			}
+			
+		}
+
+		function parcheVisible(parche){
+			if (parche.xPosition<camaraX || parche.xPosition-parche.ancho <camaraX){
+				parche.visible = true;
+				return true;
+			} else {
+				parche.visible = false;
+				return false;
+			}
+		}
+
+		// retorna un objeto de parche
+		function nuevoParche(listaAlturas, doble){
+			
+			let ancho = listaAlturas.length*ovalWidth*2 ;
+			let xPosition;
+
+			let parcheAnterior = parches[parches.length-1];
+			
+			try {
+				let finAnterior = parcheAnterior.xPosition - parcheAnterior.ancho;
+				xPosition = finAnterior - espacioEntreSemis*2;
+			} catch (err){
+				// Es el primer parche de semicorcheas
+				xPosition = -100;
+			}
+
+ 			parches.push({
+				'visible':false,
+				'ancho':ancho,
+				'xPosition':xPosition,
+				'listaAlturas':listaAlturas,
+				'doble':doble 
+			});
+		}
+
+		function crearEjercicio(){
+			if (modo == 4) {
+
+				// 	MODO LIBRE DE ENTRENAMIENTO
+				
+				for(let i = 0; i<cantidad; i++){
+					// Para cada parche de semicorcheas:
+					let numeroSemis = 2+Math.floor(2+Math.random()*2);
+					let lista = [];
+					for(let j=0; j<numeroSemis; j++){
+						// Para cada semicorchea en el parche
+						lista.push(Math.floor(Math.random()*6)+Math.round(Math.random())/2);
+					}
+					nuevoParche(lista);
+				}
+			
+			} else if (modo == 3){
+
+				// 	MODO TERCERAS
+				
+				for(let i = 0; i<cantidad; i++){
+					// Para cada parche de semicorcheas:
+					let numeroSemis = 2+Math.floor(Math.random()*3);
+					let lista = [];
+					let ultimo;
+					ultimo = Math.floor(Math.random()*6)+Math.round(Math.random())/2;
+					lista.push(ultimo);
+					for(let j=0; j<numeroSemis-1; j++){
+						// Para cada semicorchea en el parche
+						if (Math.round(Math.random())==0){
+							ultimo = ultimo - 1;
+							lista.push(ultimo);
+						} else {
+							ultimo = ultimo + 1;
+							lista.push(ultimo);
+						}
+					}
+					nuevoParche(lista);
+				}
+			} else if (modo == 2){
+				// 	MODO SEGUNDAS
+				
+				for(let i = 0; i<cantidad; i++){
+					// Para cada parche de semicorcheas:
+					let numeroSemis = 2+Math.floor(Math.random()*3);
+					let lista = [];
+					let ultimo;
+					ultimo = Math.floor(Math.random()*6)+Math.round(Math.random())/2;
+					lista.push(ultimo);
+					for(let j=0; j<numeroSemis-1; j++){
+						// Para cada semicorchea en el parche
+						if (Math.round(Math.random())==0){
+							ultimo = ultimo - 1/2;
+							lista.push(ultimo);
+						} else {
+							ultimo = ultimo + 1/2;
+							lista.push(ultimo);
+						}
+					}
+					nuevoParche(lista);
+				}
+			} else if (modo == 1){
+				// 	MODO SEGUNDAS Y TERCERAS
+				
+				for(let i = 0; i<cantidad; i++){
+					// Para cada parche de semicorcheas:
+					let numeroSemis = 2+Math.floor(Math.random()*3);
+					let lista = [];
+					let ultimo;
+					ultimo = Math.floor(Math.random()*6)+Math.round(Math.random())/2;
+					lista.push(ultimo);
+					for(let j=0; j<numeroSemis-1; j++){
+						// Para cada semicorchea en el parche
+						if (Math.round(Math.random())==0){
+							let entero = Math.round(Math.random());
+							ultimo = ultimo - entero*1/2 - 1/2;
+							lista.push(ultimo);
+						} else {
+							let entero = Math.round(Math.random());
+							ultimo = ultimo + entero*1/2 + 1/2;
+							lista.push(ultimo);
+						}
+					}
+					nuevoParche(lista);
+				}
+			}
+			
+		}
+
+	</script>
+
+	<style type="text/css">
+		canvas {
+		    padding: 0;
+		    margin: auto;
+		    display: block;
+		    position: absolute;
+		    top: 0;
+		    bottom: 0;
+		    left: 0;
+		    right: 0;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="gameWindow" width="800" height="600"></canvas>
+</body>
+</html>
